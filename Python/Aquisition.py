@@ -20,6 +20,7 @@ teste = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1,
 signal = np.concatenate([header,teste],axis=0)
 print("Signal Received: "+str(signal))
 
+
 #sweep signal with header array to find position that starts the transmition
 header_size = len(header)
 print("header size: " + str(header_size))
@@ -40,7 +41,7 @@ for i in range(0, (signal_size - (header_size-1)), 1):  #MaxI is the number of t
     if check < best_check:
         print("New best starting position found")
         best_check = check
-        start_pos = i
+        start_pos = i   #starting position for array slice (removing header)
         print("New Min Dist: " + str(check))
         print("New Optimal Starting Position: " + str(start_pos))
     
@@ -52,4 +53,4 @@ message = signal[(start_pos):] #Here we slice the received signal and remove the
 print("Message Array Sliced")
 print("Message Received: " + str(message))   
 
-app_decoder.app_decoder(message)
+app_decoder.app_decoder(message) #decode message received
