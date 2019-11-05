@@ -46,17 +46,22 @@ if mode == 4:
 #choose baud rate (bit/sec)
 baud_rate = int(input("Choose Baud Rate: "))
 print("Baud Rate = "+str(baud_rate)+" bit/sec")
-
-#record  the transmission
 """
+#record  the transmission
 fs = int(input("Recording Sample Rate: ")) # Sample rate, usually 24000
-seconds = 70  # Duration of recording
+seconds = 65  # Duration of recording
 myrecording = sd.rec(int(seconds * fs), samplerate=fs, channels=1)
 sd.wait()  # Wait until recording is finished
 write('output.wav', fs, myrecording)  # Save as WAV file
 """
 
-data, Fs = sf.read('output.wav') #comment above to use test files
+
+#recording simulation
+data, Fs = sf.read('teste_4fsk.wav') #comment above to use test files
+#data = np.concatenate((np.zeros(100000), data), axis=None)
+#noise = np.random.normal(0,5,len(data)) #adding noise to simulate recording
+#data = np.add(data,noise)
+
 
 #Process the recorded transmission (with noise)
 print("Signal Received")
@@ -74,10 +79,17 @@ if mode == 2: #2-FSK
     wave1_cos=np.cos(2*np.pi*F1*t_wave+np.pi/2)
     wave2_sin=np.sin(2*np.pi*F2*t_wave+np.pi/2)
     wave2_cos=np.cos(2*np.pi*F2*t_wave+np.pi/2)
-    
+    """
     #Apply matched filters for the 2 frequencies (filters with sin/cossin decomposition)
     casado_1=np.power(np.convolve(data,np.flip(wave1_sin)),2)+np.power(np.convolve(data,np.flip(wave1_cos)),2)
     casado_2=np.power(np.convolve(data,np.flip(wave2_sin)),2)+np.power(np.convolve(data,np.flip(wave2_cos)),2)
+    
+    """
+    #Apply matched filters fo the 2 frequencies (moving mean)
+    casado_1=np.convolve(data,np.flip(wave1))
+    casado_1=np.convolve(np.abs(casado_1),np.ones((int(len(t_wave)/2))))
+    casado_2=np.convolve(data,np.flip(wave2))
+    casado_2=np.convolve(np.abs(casado_2),np.ones((int(len(t_wave)/2))))
     
     step=int(Fs/baud_rate)
     t=np.arange(0,len(data)/Fs,1/Fs)
@@ -103,11 +115,7 @@ if mode == 2: #2-FSK
     transmission = np.zeros((len(t_amostra),), dtype=int)
     
     for i in range(0,len(t_amostra),1): #transform transmission vector to pure binary
-        if transmission_float1[i] < mean_value and transmission_float2[i] > mean_value:
-            transmission[i]=1    
-        elif transmission_float1[i] > mean_value and transmission_float2[i] < mean_value:
-            transmission[i]=0 
-        elif transmission_float2[i]>transmission_float1[i]:
+        if transmission_float2[i]>transmission_float1[i]:
             transmission[i]=1
         elif transmission_float2[i]<transmission_float1[i]:
             transmission[i]=0
@@ -186,50 +194,20 @@ if mode == 4: #4-FSK
         
     #Method 1
     for i in range(0,2*len(t_amostra),2): #transform transmission vector to pure binary
-        if transmission_float1[int(i/2)] > mean_value:
+        if transmission_float1[int(i/2)] > transmission_float2[int(i/2)] and transmission_float1[int(i/2)] > transmission_float3[int(i/2)] and transmission_float1[int(i/2)] > transmission_float4[int(i/2)]:
             transmission[i]=0
             transmission[i+1]=0
-        elif transmission_float2[int(i/2)] > mean_value:
+        elif transmission_float2[int(i/2)] > transmission_float1[int(i/2)] and transmission_float2[int(i/2)] > transmission_float3[int(i/2)] and transmission_float2[int(i/2)] > transmission_float4[int(i/2)]:
             transmission[i]=0
             transmission[i+1]=1
-        elif transmission_float4[int(i/2)] > mean_value:
+        elif transmission_float4[int(i/2)] > transmission_float1[int(i/2)] and transmission_float4[int(i/2)] > transmission_float2[int(i/2)] and transmission_float4[int(i/2)] > transmission_float3[int(i/2)]:
             transmission[i]=1
             transmission[i+1]=0
-        elif transmission_float3[int(i/2)] > mean_value:
+        elif transmission_float3[int(i/2)] > transmission_float1[int(i/2)] and transmission_float3[int(i/2)] > transmission_float2[int(i/2)] and transmission_float3[int(i/2)] > transmission_float4[int(i/2)]:
             transmission[i]=1
             transmission[i+1]=1
 
         
-    """
-    #Method 2    
-    signal=np.empty((0,2*len(t_amostra)),dtype=int)
-    for i in range(0,len(t_amostra),1):
-        count=0
-        if transmission_float1[i] > mean_value: 
-            if i==0:
-                signal=[0,0]
-            else:
-                signal.append(0) 
-                signal.append(0)
-        if transmission_float2[i] > mean_value:
-            if i==0:
-                signal=[0,1]
-            else:
-                signal.append(0)
-                signal.append(1)
-        if transmission_float4[i] > mean_value: 
-            if i==0:
-                signal=[1,0]
-            else:
-                signal.append(1) 
-                signal.append(0)
-        if transmission_float3[i] > mean_value: 
-            if i==0:
-                signal=[1,1]
-            else:
-                signal.append(1)
-                signal.append(1)
-    """
 
 #------------- End 4-FSK "if" section -----------------#
     
@@ -244,21 +222,21 @@ print("Signal size: " + str(transmission_size))
 
 check=0
 start_pos=0
-best_check=header_size
+best_check=1000000
 
 for i in range(0, (transmission_size - (header_size-1)), 1):  #MaxI is the number of times the header fits in the signal in one sweep
     
-    for j in range(i, header_size, 1):  #Store in Var check the "distance" between the header and current position in Var signal. Will slice at MinDist position
+    for j in range(i, i+header_size, 1):  #Store in Var check the "distance" between the header and current position in Var signal. Will slice at MinDist position
         #print(j)
-        check = check + (abs(transmission[j]-header[j])^2)
+        check = check + (abs(transmission[j]-header[j-i])^2)
         #print(check)
         
     if check < best_check:
         #print("New best starting position found")
         best_check = check
-        start_pos = i   #starting position for array slice (removing header)
+        start_pos = i+header_size   #starting position for array slice (removing header)
         #("New Min Dist: " + str(check))
-        #print("New Optimal Starting Position: " + str(start_pos))
+        print("New Optimal Starting Position: " + str(start_pos))
     
     check=0
 
@@ -270,4 +248,4 @@ print("Message Received: " + str(message))
 
 #print(message==[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 1, 1, 0, 1, 0, 0, 0, 1, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0, 1, 0, 1, 0, 1, 1, 1, 0, 0, 1, 1, 0, 1, 1, 1, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 0, 1, 1, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 1, 1, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1, 1, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 0, 1, 1, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 0, 1, 1, 1, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 1, 0, 1, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 0, 1, 1, 0, 1, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 0, 0, 1, 1, 0, 1, 1, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 1, 0, 1, 1, 0, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 0, 1, 1, 1, 0, 0, 1, 1, 1, 0, 1, 0, 0, 0, 1, 1, 1, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 1, 0, 0, 1, 1, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 0, 0, 0, 1, 1, 1, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 0, 1, 1, 0, 1, 1, 1, 0, 0, 1, 1, 1, 0, 1, 0, 0, 0, 1, 1, 1, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 0, 1, 1, 1, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 0, 1, 1, 1, 0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1, 1, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 1, 1, 0, 0, 1, 0, 0, 1, 1, 1, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 0, 1, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 0, 1, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 1, 0, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 1, 1, 0, 0, 1, 1, 0, 1, 1, 1, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 1, 1, 0])
 
-#app_decoder.app_decoder(message) #decode message received
+app_decoder.app_decoder(message) #decode message received
