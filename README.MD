@@ -33,5 +33,4 @@ The symbol rate used may be defined moments before transmitting. Therefore, the 
 
 
 ## Test Files
-In the repository, you will find two test files: *test_2fsk.wav* and *test_4fsk.wav*. These files were generated with a 20 bit/sec rate and can were used to help in the process of programming the decoder. The *test.txt* file contains the respective bit sequence (without the header). Let it be stated that these test files, naturally, are noise free. If testing with noise is desired, a microfone can be used to record the file being played.
-
+In the repository, you will find two test files: *test_2fsk.wav* and *test_4fsk.wav*. These files were generated with a 20 bit/sec rate and were used to help in the process of programming the decoder. The *test.txt* file contains the respective bit sequence (without the header). Let it be stated that these test files, naturally, are noise free. If testing with noise (to simulate a recording) is desired one must only uncomment the correct section of the code, which adds random bits before the actuall recording and gaussian noise to the whole array.
