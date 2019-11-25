@@ -55,10 +55,10 @@ write('output.wav', fs, myrecording)  # Save as WAV file
 
 
 #recording simulation
-data, Fs = sf.read('teste_4fsk.wav') #comment above to use test files
-data = np.concatenate((np.zeros(100000), data), axis=None)
-noise = np.random.normal(0,2,len(data)) #adding noise to simulate recording
-data = np.add(data,noise)
+data, Fs = sf.read('recv_audio-4FSK.wav') #comment above to use test files
+#data = np.concatenate((np.zeros(100000), data), axis=None)
+#noise = np.random.normal(0,2,len(data)) #adding noise to simulate recording
+#data = np.add(data,noise)
 
 
 #Process the recorded transmission (with noise)
