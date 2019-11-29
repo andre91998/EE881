@@ -24,6 +24,7 @@ Two different modulations can be processed: BFSK (2-FSK) and 4-FSK. Knowing whic
     - 800 Hz - 01
     - 1000 Hz - 11
     - 1200 Hz - 10
+    
 Although other detection methods exist and can be applied in this case, in this project we use a **Matched Filter**
 
 For further information on how the transmission works, see *TX_script.py* and other files in *Examples* folder.
