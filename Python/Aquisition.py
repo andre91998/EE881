@@ -26,7 +26,6 @@ import sounddevice as sd
 from scipy.io.wavfile import write
 import app_decoder
 
-
 #Header to be removed from aquired signal (from Header.txt, see repository)
 header = [1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0, 0, 1, 1, 1, 0, 0, 0, 1, 0, 1, 1, 1, 1, 0, 0, 1, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1]
 
@@ -55,9 +54,9 @@ write('output.wav', fs, myrecording)  # Save as WAV file
 
 
 #recording simulation
-data, Fs = sf.read('recv_audio-4FSK.wav') #comment above to use test files
+data, Fs = sf.read('teste1_2fsk.wav') #comment above to use test files
 #data = np.concatenate((np.zeros(100000), data), axis=None)
-#noise = np.random.normal(0,2,len(data)) #adding noise to simulate recording
+#noise = np.random.normal(0,6,len(data)) #adding noise to simulate recording
 #data = np.add(data,noise)
 
 
