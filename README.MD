@@ -1,3 +1,10 @@
+## Dependencies
+    numpy
+    matplotlib.pyplot
+    soundfile
+    sounddevice
+    scipy.io.wavfile
+
 ## Digital FSK Modulation
 FSK (*frequency-shift keying*) modulation is a form of Passband modulation in witch digital information is transmitted through frequency changes of a carrier signal. The simplest FSK is binary FSK (BFSK). BFSK uses a pair of discrete frequencies to transmit binary (0s and 1s) information. With this scheme, the "1" is called the mark frequency and the "0" is called the space frequency.
 
@@ -39,3 +46,4 @@ Also in this repository are the two files which were recorded when presenting th
 
 ## Recording 
 If recording the transmission with your computer is desired, the current "audio obtaining" section should be commented and the above section uncommented. For this section to function properly, the user must know the time duration of the transmission or guess a value that will guarantee recording of the full audio file. You must also make sure that your microfone is of good quality, or else you will be unable to decode the transmission.
+
